@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Data Generator 🌍</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4 font-sans text-slate-800">
+
+    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-lg">
+        
+        <div class="flex flex-col items-center mb-8">
+            <div class="relative inline-block mb-4">
+                <h1 class="text-2xl font-bold">Test Data</h1>
+                <span class="absolute -top-4 -right-7 text-2xl transform rotate-12 hover:-rotate-12 transition-transform duration-300 cursor-help" title="Honk!">🪿</span>
+            </div>
+            
+            <div class="relative flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 py-2.5 pl-4 pr-10 rounded-xl shadow-sm w-full max-w-xs justify-center cursor-pointer transition-colors">
+                <span id="countryFlag" class="text-2xl pointer-events-none">🇩🇪</span>
+                <select id="countrySelect" class="bg-transparent text-slate-800 text-base focus:ring-0 focus:outline-none cursor-pointer font-bold outline-none w-full appearance-none text-center">
+                    <option value="GR">Greece</option>
+                    <option value="RO">Romania</option>
+                    <option value="FI">Finland</option>
+                    <option value="DE" selected>Germany</option>
+                    <option value="US_NJ">US (New Jersey)</option>
+                </select>
+                <div class="absolute right-4 pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div id="dataContainer" class="mb-6">
+            </div>
+
+        <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-sm">
+            Generate New Data
+        </button>
+    </div>
+
+    <script type="module">
+        import { fakerEN, fakerFI, fakerDE, fakerRO } from 'https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/+esm';
+
+        // Иконки теперь в обычных кавычках для безопасности парсинга
+        const copyIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>';
+        const checkIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>';
+
+        window.copyToClipboard = function(elementId, button) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                button.innerHTML = checkIcon;
+                button.classList.replace('bg-slate-100', 'bg-green-100');
+                button.classList.replace('text-slate-500', 'text-green-700');
+                
+                setTimeout(() => {
+                    button.innerHTML = copyIcon;
+                    button.classList.replace('bg-green-100', 'bg-slate-100');
+                    button.classList.replace('text-green-700', 'text-slate-500');
+                }, 1500);
+            }).catch(err => console.error("Clipboard error:", err));
+        }
+
+        const toLatin = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z\s\-]/g, "");
+
+        function generateSafeEmail(firstName, lastName) {
+            let domain;
+            do { domain = fakerEN.string.alpha({ length: { min: 6, max: 10 } }).toLowerCase() + 'mail.net'; } 
+            while (domain.includes('test'));
+            return `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${domain}`;
+        }
+
+        const generateGreekID = () => {
+            const letters = ['A', 'B', 'E', 'Z', 'H', 'I', 'K', 'M', 'N', 'O', 'P', 'T', 'Y', 'X'];
+            const l1 = letters[Math.floor(Math.random() * letters.length)];
+            const l2 = letters[Math.floor(Math.random() * letters.length)];
+            return `${l1}${l2} ${fakerEN.string.numeric(6)}`;
+        };
+
+        const generateRomanianCNP = (birthDate, gender) => {
+            const isMale = gender === 'male';
+            const year = birthDate.getFullYear();
+            let s = isMale ? 1 : 2;
+            if (year >= 2000) s += 4;
+            const aa = String(year).slice(-2);
+            const mm = String(birthDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(birthDate.getDate()).padStart(2, '0');
+            const jj = String(fakerEN.number.int({ min: 1, max: 52 })).padStart(2, '0');
+            const nnn = String(fakerEN.number.int({ min: 1, max: 999 })).padStart(3, '0');
+            const first12 = `${s}${aa}${mm}${dd}${jj}${nnn}`;
+            
+            const controlStr = "279146358279";
+            let sum = 0;
+            for (let i = 0; i < 12; i++) sum += parseInt(first12[i]) * parseInt(controlStr[i]);
+            let c = sum % 11;
+            return first12 + (c === 10 ? 1 : c);
+        };
+
+        const generateFinnishHETU = (birthDate) => {
+            const dd = String(birthDate.getDate()).padStart(2, '0');
+            const mm = String(birthDate.getMonth() + 1).padStart(2, '0');
+            const yy = String(birthDate.getFullYear()).slice(-2);
+            const century = birthDate.getFullYear() >= 2000 ? 'A' : '-';
+            const nnn = String(fakerEN.number.int({ min: 2, max: 899 })).padStart(3, '0');
+            const checksumStr = "0123456789ABCDEFHJKLMNPRSTUVWXY";
+            const num = parseInt(`${dd}${mm}${yy}${nnn}`, 10);
+            return `${dd}${mm}${yy}${century}${nnn}${checksumStr[num % 31]}`;
+        };
+
+        const generateGermanID = () => `T${fakerEN.string.alphanumeric(8).toUpperCase()}`;
+        const generateUSSSN = () => `${fakerEN.string.numeric(3)}-${fakerEN.string.numeric(2)}-${fakerEN.string.numeric(4)}`;
+
+        function createDataRow(label, value, fieldId) {
+            return `
+                <div class="flex justify-between items-end border-b border-slate-200/60 pb-2 last:border-0 last:pb-0">
+                    <div class="flex flex-col min-w-0 flex-1">
+                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">${label}</span>
+                        <span class="text-slate-800 font-medium mt-0.5 break-all" id="field-${fieldId}">${value}</span>
+                    </div>
+                    <button onclick="copyToClipboard('field-${fieldId}', this)" 
+                            title="Copy to clipboard"
+                            class="flex items-center justify-center shrink-0 h-7 w-7 bg-slate-100 hover:bg-blue-100 hover:text-blue-700 text-slate-500 rounded transition-colors duration-150 ml-3">
+                        ${copyIcon}
+                    </button>
+                </div>
+            `;
+        }
+
+        function generateData() {
+            const container = document.getElementById('dataContainer');
+            
+            try {
+                const country = document.getElementById('countrySelect').value;
+                
+                let f, flag, phonePrefix, idLabel, idValue, street, city, zipCode;
+                const gender = fakerEN.person.sexType(); 
+                const birthDate = fakerEN.date.birthdate({ min: 18, max: 65, mode: 'age' });
+                const formattedDate = birthDate.toLocaleDateString('en-GB');
+
+                switch (country) {
+                    case 'DE': {
+                        f = fakerDE; flag = '🇩🇪'; phonePrefix = '+49 ';
+                        idLabel = 'German ID'; idValue = generateGermanID();
+                        city = toLatin(f.location.city());
+                        street = toLatin(f.location.streetAddress());
+                        zipCode = f.string.numeric(5);
+                        break;
+                    }
+                    case 'GR': {
+                        f = fakerEN; flag = '🇬🇷'; phonePrefix = '+30 ';
+                        idLabel = 'Greek ID (ADT)'; idValue = generateGreekID();
+                        const grCities = ['Athens', 'Thessaloniki', 'Patras', 'Heraklion', 'Larissa'];
+                        const grStreets = ['Ermou', 'Venizelou', 'Tsimiski', 'Egnatia', 'Omonoia'];
+                        city = grCities[Math.floor(Math.random() * grCities.length)];
+                        street = `${grStreets[Math.floor(Math.random() * grStreets.length)]} ${f.number.int({ min: 1, max: 150 })}`;
+                        zipCode = f.string.numeric(5);
+                        break;
+                    }
+                    case 'RO': {
+                        f = fakerRO; flag = '🇷🇴'; phonePrefix = '+40 ';
+                        idLabel = 'Romanian CNP'; idValue = generateRomanianCNP(birthDate, gender);
+                        city = toLatin(f.location.city());
+                        street = toLatin(f.location.streetAddress());
+                        zipCode = f.string.numeric(6);
+                        break;
+                    }
+                    case 'FI': {
+                        f = fakerFI; flag = '🇫🇮'; phonePrefix = '+358 ';
+                        idLabel = 'Finnish HETU'; idValue = generateFinnishHETU(birthDate);
+                        city = toLatin(f.location.city());
+                        street = toLatin(f.location.streetAddress());
+                        zipCode = f.string.numeric(5);
+                        break;
+                    }
+                    case 'US_NJ': {
+                        f = fakerEN; flag = '🇺🇸'; phonePrefix = '+1 ';
+                        idLabel = 'US SSN'; idValue = generateUSSSN();
+                        const njCities = ['Newark', 'Jersey City', 'Paterson', 'Elizabeth', 'Edison'];
+                        city = njCities[Math.floor(Math.random() * njCities.length)];
+                        street = f.location.streetAddress();
+                        zipCode = '07' + f.string.numeric(3); 
+                        break;
+                    }
+                }
+
+                document.getElementById('countryFlag').innerText = flag;
+
+                const firstName = toLatin(f.person.firstName(gender));
+                const lastName = toLatin(f.person.lastName(gender));
+                const email = generateSafeEmail(firstName, lastName);
+                const phone = phonePrefix + f.string.numeric(country === 'DE' ? 11 : 10);
+
+                container.innerHTML = `
+                    <div class="space-y-3 mb-6">
+                        ${createDataRow('First Name', firstName, 'fname')}
+                        ${createDataRow('Last Name', lastName, 'lname')}
+                        ${createDataRow('Email', email, 'email')}
+                        ${createDataRow('Phone', phone, 'phone')}
+                        ${createDataRow('Date of Birth', formattedDate, 'dob')}
+                        ${createDataRow(idLabel, idValue, 'natid')}
+                    </div>
+
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Address Details</h3>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 shadow-inner">
+                        ${createDataRow('Street', street, 'street')}
+                        ${createDataRow('City', city, 'city')}
+                        ${createDataRow('Zip Code', zipCode, 'zip')}
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-sm font-medium">
+                        ⚠️ Error generating data: ${error.message}
+                    </div>
+                `;
+                console.error("Data Generator Error:", error);
+            }
+        }
+
+        document.getElementById('generateBtn').addEventListener('click', generateData);
+        document.getElementById('countrySelect').addEventListener('change', generateData);
+        
+        generateData();
+    </script>
+</body>
+</html>
