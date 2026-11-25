@@ -1,5 +1,3 @@
 test phrase
 
-this is a second phrase .
-
-new change
+thia is a second phrase
